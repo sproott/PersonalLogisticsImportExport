@@ -4,6 +4,6 @@
   "title": "Personal Logistics Import/Export",
   "author": "sproott",
   "factorio_version": "0.18",
-  "dependencies": ["base >= 0.18.40"],
+  "dependencies": ["base >= 0.18"],
   "description": "Allows you to export your current personal logistics settings and import them in a different save."
 }
