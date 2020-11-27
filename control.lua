@@ -1,4 +1,4 @@
-require("mod-gui")
+local mod_gui = require("mod-gui")
 
 script.on_event(defines.events.on_lua_shortcut, function(event)
     local player = game.get_player(event.player_index)
@@ -102,7 +102,6 @@ function close_main_window(player, action)
                 error_message = {"plie_label.error_invalid_string"}
             else
                 local pl_slots = game.json_to_table(decoded_string)
-                player.character_logistic_slot_count = table_size(pl_slots)
                 for index, slot in ipairs(pl_slots) do
                     local status = pcall(import_item, player, index, slot)
                     if not status then error_message = {"plie_label.error_invalid_item"} end
@@ -127,7 +126,7 @@ end
 function generate_export_string(player)
     local pl_slots = {}
     local empty = true
-    for i = 1, player.character_logistic_slot_count do
+    for i = 1, player.character.request_slot_count do
         local slot = player.get_personal_logistic_slot(i)
         if slot.name ~= nil then
             table.insert(pl_slots, slot)
