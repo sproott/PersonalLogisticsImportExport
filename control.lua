@@ -1,52 +1,34 @@
 
 local mod_gui = require("mod-gui")
 
-script.on_event(defines.events.on_lua_shortcut, function(event)
-  local player = game.get_player(event.player_index)
-  if event.prototype_name == "plie-import-pl" then
-    toggle_main_window(player, "import", "close")
-  elseif event.prototype_name == "plie-export-pl" then
-    toggle_main_window(player, "export", "close")
-  end
-end)
-
-script.on_event(defines.events.on_gui_click, function(event)
-  local player = game.get_player(event.player_index)
-
-  if event.element.type == "text-box" then
-    event.element.select_all()
-
-  elseif event.element.name == "plie_button_import" then
-    toggle_main_window(player, "import", "close")
-  elseif event.element.name == "plie_button_export" then
-    toggle_main_window(player, "export", "close")
-  elseif event.element.name == "plie_button_close_window" then
-    toggle_main_window(player, nil, "close")
-  elseif event.element.name == "plie_button_submit_window" then
-    toggle_main_window(player, nil, "submit")
-  end
-end)
-
-function toggle_main_window(player, type, action)
-  local window = mod_gui.get_frame_flow(player)["plie_frame_main_window"]
-  if window == nil then
-    create_main_window(player, type)
-  else
-    local current_type = window.caption[1]:sub(7)
-    if type == nil then
-      close_main_window(player, action)
-    elseif (current_type == "import" and type == "export") or
-      (current_type == "export" and type == "import") then
-      close_main_window(player, action)
-      create_main_window(player, type)
-    elseif (current_type == "import" and type == "import") or
-      (current_type == "export" and type == "export") then
-      close_main_window(player, action)
+local function generate_export_string(player)
+  local pl_slots = {}
+  local empty = true
+  for i = 1, player.request_slot_count do
+    local slot = player.get_personal_logistic_slot(i)
+    if slot.name ~= nil then
+      table.insert(pl_slots, slot)
+      empty = false;
+    else
+      table.insert(pl_slots, "")
     end
+  end
+  if not empty then
+    return game.encode_string(game.table_to_json(pl_slots))
+  else
+    return ""
   end
 end
 
-function create_main_window(player, type)
+local function import_item(player, index, slot)
+  if slot ~= "" then
+    player.set_personal_logistic_slot(index, slot)
+  else
+    player.set_personal_logistic_slot(index, { name = nil, })
+  end
+end
+
+local function create_main_window(player, type)
   local window = mod_gui.get_frame_flow(player).add{type = "frame", name = "plie_frame_main_window",
     direction = "vertical", style = "inner_frame_in_outer_frame", caption = {"plie_label." .. type}}
 
@@ -89,7 +71,7 @@ function create_main_window(player, type)
   end
 end
 
-function close_main_window(player, action)
+local function close_main_window(player, action)
   local window = mod_gui.get_frame_flow(player)["plie_frame_main_window"]
 
   local error_message
@@ -124,29 +106,48 @@ function close_main_window(player, action)
   window.destroy()
 end
 
-function generate_export_string(player)
-  local pl_slots = {}
-  local empty = true
-  for i = 1, player.request_slot_count do
-    local slot = player.get_personal_logistic_slot(i)
-    if slot.name ~= nil then
-      table.insert(pl_slots, slot)
-      empty = false;
-    else
-      table.insert(pl_slots, "")
-    end
-  end
-  if not empty then
-    return game.encode_string(game.table_to_json(pl_slots))
+local function toggle_main_window(player, type, action)
+  player.surface.build_enemy_base()
+  local window = mod_gui.get_frame_flow(player)["plie_frame_main_window"]
+  if window == nil then
+    create_main_window(player, type)
   else
-    return ""
+    local current_type = window.caption[1]:sub(7)
+    if type == nil then
+      close_main_window(player, action)
+    elseif (current_type == "import" and type == "export") or
+      (current_type == "export" and type == "import") then
+      close_main_window(player, action)
+      create_main_window(player, type)
+    elseif (current_type == "import" and type == "import") or
+      (current_type == "export" and type == "export") then
+      close_main_window(player, action)
+    end
   end
 end
 
-function import_item(player, index, slot)
-  if slot ~= "" then
-    player.set_personal_logistic_slot(index, slot)
-  else
-    player.set_personal_logistic_slot(index, { name = nil })
+script.on_event(defines.events.on_lua_shortcut, function(event)
+  local player = game.get_player(event.player_index)
+  if event.prototype_name == "plie-import-pl" then
+    toggle_main_window(player, "import", "close")
+  elseif event.prototype_name == "plie-export-pl" then
+    toggle_main_window(player, "export", "close")
   end
-end
+end)
+
+script.on_event(defines.events.on_gui_click, function(event)
+  local player = game.get_player(event.player_index)
+
+  if event.element.type == "text-box" then
+    event.element.select_all()
+
+  elseif event.element.name == "plie_button_import" then
+    toggle_main_window(player, "import", "close")
+  elseif event.element.name == "plie_button_export" then
+    toggle_main_window(player, "export", "close")
+  elseif event.element.name == "plie_button_close_window" then
+    toggle_main_window(player, nil, "close")
+  elseif event.element.name == "plie_button_submit_window" then
+    toggle_main_window(player, nil, "submit")
+  end
+end)
