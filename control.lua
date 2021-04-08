@@ -4,7 +4,7 @@ local mod_gui = require("mod-gui")
 local function generate_export_string(player)
   local pl_slots = {}
   local empty = true
-  for i = 1, player.request_slot_count do
+  for i = 1, player.character.request_slot_count do
     local slot = player.get_personal_logistic_slot(i)
     if slot.name ~= nil then
       table.insert(pl_slots, slot)
