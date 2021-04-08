@@ -107,7 +107,6 @@ local function close_main_window(player, action)
 end
 
 local function toggle_main_window(player, type, action)
-  player.surface.build_enemy_base()
   local window = mod_gui.get_frame_flow(player)["plie_frame_main_window"]
   if window == nil then
     create_main_window(player, type)
