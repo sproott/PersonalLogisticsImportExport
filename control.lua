@@ -1,6 +1,7 @@
 
 local mod_gui = require("mod-gui")
 
+---@param player LuaPlayer
 local function generate_export_string(player)
   local pl_slots = {}
   local empty = true
@@ -20,6 +21,9 @@ local function generate_export_string(player)
   end
 end
 
+---@param player LuaPlayer
+---@param index uint
+---@param slot PersonalLogisticParameters
 local function import_item(player, index, slot)
   if slot ~= "" then
     player.set_personal_logistic_slot(index, slot)
@@ -28,7 +32,10 @@ local function import_item(player, index, slot)
   end
 end
 
+---@param player LuaPlayer
+---@param type string
 local function create_main_window(player, type)
+  ---@type LuaGuiElement
   local window = mod_gui.get_frame_flow(player).add{type = "frame", name = "plie_frame_main_window",
     direction = "vertical", style = "inner_frame_in_outer_frame", caption = {"plie_label." .. type}}
 
@@ -53,6 +60,7 @@ local function create_main_window(player, type)
       text_box.text = generate_export_string(player)
       text_box.select_all()
     else
+      ---@type LuaGuiElement
       local error_message_label = window["plie_label_error_message"]
       error_message_label.visible = true
       error_message_label.caption = {"plie_label.error_empty_requests"}
@@ -71,11 +79,15 @@ local function create_main_window(player, type)
   end
 end
 
+---@param player LuaPlayer
+---@param action string
 local function close_main_window(player, action)
+  ---@type LuaGuiElement
   local window = mod_gui.get_frame_flow(player)["plie_frame_main_window"]
 
   local error_message
   if action == "submit" then
+    ---@type string
     local encoded_string = window["plie_text-box_pl_string"].text
     if encoded_string == "" then
       error_message = {"plie_label.error_invalid_string"}
@@ -85,6 +97,7 @@ local function close_main_window(player, action)
         error_message = {"plie_label.error_invalid_string"}
       else
         local pl_slots = game.json_to_table(decoded_string)
+        ---@typelist number, PersonalLogisticParameters
         for index, slot in ipairs(pl_slots) do
           local status = pcall(import_item, player, index, slot)
           if not status then error_message = {"plie_label.error_invalid_item"} end
@@ -93,6 +106,7 @@ local function close_main_window(player, action)
     end
 
     if error_message ~= nil then
+      ---@type LuaGuiElement
       local error_message_label = window["plie_label_error_message"]
       error_message_label.visible = true
       error_message_label.caption = error_message
@@ -106,11 +120,16 @@ local function close_main_window(player, action)
   window.destroy()
 end
 
+---@param player LuaPlayer
+---@param type string
+---@param action string
 local function toggle_main_window(player, type, action)
+  ---@type LuaGuiElement
   local window = mod_gui.get_frame_flow(player)["plie_frame_main_window"]
   if window == nil then
     create_main_window(player, type)
   else
+    ---@type string
     local current_type = window.caption[1]:sub(7)
     if type == nil then
       close_main_window(player, action)
