@@ -1,4 +1,15 @@
 ---------------------------------------------------------------------------------------------------
+Version: 1.1.1
+Date: ????
+  Changes:
+    - Clear all requests that were not overwritten by the imported string,
+      as the warning says it would
+    - Also try to get the player's character from associated characters,
+      but only if there is a single one of said characters
+  Bugfixes:
+    - Fix script error when failing to get the player's character
+    - Fix some invalid import strings causing script errors
+---------------------------------------------------------------------------------------------------
 Version: 1.1.0
 Date: 27.11.2020
   Changes:

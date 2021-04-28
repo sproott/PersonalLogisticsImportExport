@@ -2,11 +2,24 @@
 local mod_gui = require("mod-gui")
 
 ---@param player LuaPlayer
-local function generate_export_string(player)
+---@return LuaEntity? @ the player's character
+local function get_character(player)
+  do
+    local character = player.character or player.cutscene_character
+    if character then
+      return character
+    end
+  end
+  local associated_characters = player.get_associated_characters()
+  return (not associated_characters[2]) and associated_characters[1]
+end
+
+---@param character LuaEntity
+local function generate_export_string(character)
   local pl_slots = {}
   local empty = true
-  for i = 1, player.character.request_slot_count do
-    local slot = player.get_personal_logistic_slot(i)
+  for i = 1, character.request_slot_count do
+    local slot = character.get_personal_logistic_slot(i)
     if slot.name ~= nil then
       table.insert(pl_slots, slot)
       empty = false;
@@ -21,14 +34,14 @@ local function generate_export_string(player)
   end
 end
 
----@param player LuaPlayer
+---@param character LuaEntity
 ---@param index uint
 ---@param slot PersonalLogisticParameters
-local function import_item(player, index, slot)
+local function import_item(character, index, slot)
   if slot ~= "" then
-    player.set_personal_logistic_slot(index, slot)
+    character.set_personal_logistic_slot(index, slot)
   else
-    player.set_personal_logistic_slot(index, { name = nil, })
+    character.set_personal_logistic_slot(index, {})
   end
 end
 
@@ -55,15 +68,25 @@ local function create_main_window(player, type)
   text_box.style.bottom_margin = 6
 
   if type == "export" then
-    local text = generate_export_string(player)
-    if text ~= "" then
-      text_box.text = generate_export_string(player)
-      text_box.select_all()
+    local error_message
+    local character = get_character(player)
+    if not character then
+      error_message = {"plie_label.error_missing_character"}
     else
+      local text = generate_export_string(character)
+      if text ~= "" then
+        text_box.text = text
+        text_box.select_all()
+      else
+        error_message = {"plie_label.error_empty_requests"}
+      end
+    end
+
+    if error_message then
       ---@type LuaGuiElement
       local error_message_label = window["plie_label_error_message"]
       error_message_label.visible = true
-      error_message_label.caption = {"plie_label.error_empty_requests"}
+      error_message_label.caption = error_message
       window["plie_label_warning"].visible = false
     end
   end
@@ -87,20 +110,39 @@ local function close_main_window(player, action)
 
   local error_message
   if action == "submit" then
-    ---@type string
-    local encoded_string = window["plie_text-box_pl_string"].text
-    if encoded_string == "" then
-      error_message = {"plie_label.error_invalid_string"}
+    local character = get_character(player)
+    if not character then
+      error_message = {"plie_label.error_missing_character"}
     else
-      local decoded_string = game.decode_string(encoded_string)
-      if decoded_string == nil then
+      ---@type string
+      local encoded_string = window["plie_text-box_pl_string"].text
+      if encoded_string == "" then
         error_message = {"plie_label.error_invalid_string"}
       else
-        local pl_slots = game.json_to_table(decoded_string)
-        ---@typelist number, PersonalLogisticParameters
-        for index, slot in ipairs(pl_slots) do
-          local status = pcall(import_item, player, index, slot)
-          if not status then error_message = {"plie_label.error_invalid_item"} end
+        local decoded_string = game.decode_string(encoded_string)
+        if decoded_string == nil then
+          error_message = {"plie_label.error_invalid_string"}
+        else
+          -- not an array because there can be holes
+          ---@type table<number, PersonalLogisticParameters>
+          local pl_slots = game.json_to_table(decoded_string)
+          if not pl_slots or type(pl_slots) ~= "table" then
+            error_message = {"plie_label.error_invalid_string"}
+          else
+            ---@type table<number, boolean>
+            local index_map = {}
+            for index, slot in pairs(pl_slots) do
+              index_map[index] = true
+              ---@type boolean|nil
+              local success = pcall(import_item, character, index, slot)
+              if not success then error_message = {"plie_label.error_invalid_item"} end
+            end
+            for i = 1, character.request_slot_count do
+              if not index_map[i] then
+                character.set_personal_logistic_slot(i, {})
+              end
+            end
+          end
         end
       end
     end
