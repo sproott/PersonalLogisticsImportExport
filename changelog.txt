@@ -1,6 +1,6 @@
 ---------------------------------------------------------------------------------------------------
 Version: 1.1.1
-Date: ????
+Date: 06.05.2021
   Changes:
     - Clear all requests that were not overwritten by the imported string,
       as the warning says it would

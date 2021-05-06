@@ -6,3 +6,4 @@ Heavily based on [QuickBar Import/Export by Therenas](https://mods.factorio.com/
 Contributors:
 
 Sunnova - 1.1.0
+JanSharp - 1.1.1
